@@ -269,7 +269,7 @@ class ChillGuyImposterEscapeMD3 {
             return true;
         });
 
-        if (Math.random() < 0.02) {
+        if (Math.random() < 1) {
             const dx = this.player.x - this.imposter.x;
             const dy = this.player.y - this.imposter.y;
             const angle = Math.atan2(dy, dx);
