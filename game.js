@@ -33,7 +33,7 @@ class ChillGuyImposterEscapeMD3 {
             y: this.canvasHeight - 70,
             width: 40,
             height: 60,
-            speed: 0.5, // Reduced initial speed
+            speed: 0.5,
             dx: 0,
             dy: 0
         };
@@ -47,19 +47,27 @@ class ChillGuyImposterEscapeMD3 {
         this.gravity = 0.8;
         this.keys = {};
 
-        this.isDarkMode = true; // Set dark mode as default
+        this.isDarkMode = true;
         this.isMusicEnabled = true;
         this.isSfxEnabled = true;
+        
+        // fucking solved
         this.backgroundMusic = new Audio('assets/background-music.mp3');
         this.backgroundMusic.loop = true;
         this.coinSound = new Audio('assets/coin-collect.mp3');
-
-        this.compressAudio(this.backgroundMusic);
+        
+        // Initialize audio here
+        this.audioContext = null;
+        this.isAudioInitialized = false;
 
         this.gameLoop = this.gameLoop.bind(this);
         this.handleKeyDown = this.handleKeyDown.bind(this);
         this.handleKeyUp = this.handleKeyUp.bind(this);
+        this.initializeAudio = this.initializeAudio.bind(this);
 
+        // Added click listener to initialize audio remember
+        document.addEventListener('click', this.initializeAudio, { once: true });
+        
         document.addEventListener('keydown', this.handleKeyDown);
         document.addEventListener('keyup', this.handleKeyUp);
         this.restartButton.addEventListener('click', () => this.restartGame());
@@ -73,22 +81,37 @@ class ChillGuyImposterEscapeMD3 {
         document.getElementById('toggle-sfx').addEventListener('click', () => this.toggleSfx());
 
         this.loadAssets();
-        this.applyTheme(); // Apply theme on initialization
+        this.applyTheme();
     }
 
-    compressAudio(audio, threshold = 0.5, ratio = 60) {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const source = audioContext.createMediaElementSource(audio);
-        const compressor = audioContext.createDynamicsCompressor();
+    async initializeAudio() {
+        if (this.isAudioInitialized) return;
         
-        compressor.threshold.setValueAtTime(threshold, audioContext.currentTime);
-        compressor.ratio.setValueAtTime(ratio, audioContext.currentTime);
-        compressor.knee.setValueAtTime(40, audioContext.currentTime);
-        compressor.attack.setValueAtTime(0, audioContext.currentTime);
-        compressor.release.setValueAtTime(0.25, audioContext.currentTime);
-        
-        source.connect(compressor);
-        compressor.connect(audioContext.destination);
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            await this.audioContext.resume();
+            
+            // Initialize audio compression with corrected values
+            const compressor = this.audioContext.createDynamicsCompressor();
+            compressor.threshold.setValueAtTime(-24, this.audioContext.currentTime);
+            compressor.ratio.setValueAtTime(12, this.audioContext.currentTime);
+            compressor.knee.setValueAtTime(30, this.audioContext.currentTime);
+            compressor.attack.setValueAtTime(0.003, this.audioContext.currentTime);
+            compressor.release.setValueAtTime(0.25, this.audioContext.currentTime);
+            
+            // Set up background music
+            const musicSource = this.audioContext.createMediaElementSource(this.backgroundMusic);
+            musicSource.connect(compressor);
+            compressor.connect(this.audioContext.destination);
+            
+            // Set up coin sound
+            const coinSource = this.audioContext.createMediaElementSource(this.coinSound);
+            coinSource.connect(compressor);
+            
+            this.isAudioInitialized = true;
+        } catch (error) {
+            console.warn('Audio initialization failed:', error);
+        }
     }
 
     toggleTheme() {
@@ -116,7 +139,11 @@ class ChillGuyImposterEscapeMD3 {
     toggleMusic() {
         this.isMusicEnabled = !this.isMusicEnabled;
         if (this.isMusicEnabled) {
-            this.backgroundMusic.play();
+            if (this.isAudioInitialized) {
+                this.backgroundMusic.play().catch(error => {
+                    console.warn('Failed to play background music:', error);
+                });
+            }
         } else {
             this.backgroundMusic.pause();
         }
@@ -194,27 +221,23 @@ class ChillGuyImposterEscapeMD3 {
         ];
 
         this.player.speed = 5 + (this.currentLevel - 1) * 0.5;
-        this.imposter.speed = 0.75 + (this.currentLevel - 1) * 0.15; // Adjusted speed increase per level
+        this.imposter.speed = 0.75 + (this.currentLevel - 1) * 0.15;
         this.imposter.dx = 0;
         this.imposter.dy = 0;
     }
 
     update() {
-        // Player movement
         if (this.keys['ArrowLeft']) this.player.x -= this.player.speed;
         if (this.keys['ArrowRight']) this.player.x += this.player.speed;
 
-        // Jumping
         if (this.keys['Space'] && !this.player.isJumping) {
             this.player.velocityY = -this.player.jumpForce;
             this.player.isJumping = true;
         }
 
-        // Apply gravity
         this.player.velocityY += this.gravity;
         this.player.y += this.player.velocityY;
 
-        // Update platform positions
         this.platforms.forEach(platform => {
             if (platform.dx !== 0) {
                 platform.x += platform.dx;
@@ -224,7 +247,6 @@ class ChillGuyImposterEscapeMD3 {
             }
         });
 
-        // Collision detection with platforms
         this.platforms.forEach(platform => {
             if (this.checkCollision(this.player, platform)) {
                 this.player.y = platform.y - this.player.height;
@@ -233,21 +255,21 @@ class ChillGuyImposterEscapeMD3 {
             }
         });
 
-        // Coin collection
         this.coins = this.coins.filter(coin => {
             if (this.checkCollision(this.player, coin)) {
                 this.score += 10;
                 this.scoreElement.textContent = this.score;
-                if (this.isSfxEnabled) {
-                    this.coinSound.play();
+                if (this.isSfxEnabled && this.isAudioInitialized) {
+                    this.coinSound.play().catch(error => {
+                        console.warn('Failed to play coin sound:', error);
+                    });
                 }
                 return false;
             }
             return true;
         });
 
-        // Imposter movement
-        if (Math.random() < 1) { // 2% chance to change direction each frame
+        if (Math.random() < 0.02) {
             const dx = this.player.x - this.imposter.x;
             const dy = this.player.y - this.imposter.y;
             const angle = Math.atan2(dy, dx);
@@ -255,7 +277,6 @@ class ChillGuyImposterEscapeMD3 {
             this.imposter.y += Math.sin(angle) * this.imposter.speed;
         }
 
-        // Imposter collision
         if (this.checkCollision(this.player, this.imposter)) {
             this.lives--;
             this.livesElement.textContent = this.lives;
@@ -266,13 +287,11 @@ class ChillGuyImposterEscapeMD3 {
             }
         }
 
-        // Keep player and imposter within canvas bounds
         this.player.x = Math.max(0, Math.min(this.player.x, this.canvasWidth - this.player.width));
         this.player.y = Math.min(this.player.y, this.canvasHeight - this.player.height);
         this.imposter.x = Math.max(0, Math.min(this.imposter.x, this.canvasWidth - this.imposter.width));
         this.imposter.y = Math.min(this.imposter.y, this.canvasHeight - this.imposter.height);
 
-        // Respawn coins if all collected
         if (this.coins.length === 0) {
             this.respawnCoins();
         }
@@ -281,17 +300,14 @@ class ChillGuyImposterEscapeMD3 {
     draw() {
         this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
 
-        // Draw background
         this.ctx.fillStyle = this.backgroundColor;
         this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
 
-        // Draw platforms
         this.ctx.fillStyle = this.platformColor;
         this.platforms.forEach(platform => {
             this.ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
         });
 
-        // Draw coins
         this.ctx.fillStyle = '#FFD700';
         this.coins.forEach(coin => {
             this.ctx.beginPath();
@@ -299,10 +315,7 @@ class ChillGuyImposterEscapeMD3 {
             this.ctx.fill();
         });
 
-        // Draw player
         this.ctx.drawImage(this.playerIcon, this.player.x, this.player.y, this.player.width, this.player.height);
-
-        // Draw imposter
         this.ctx.drawImage(this.imposterIcon, this.imposter.x, this.imposter.y, this.imposter.width, this.imposter.height);
     }
 
@@ -316,8 +329,10 @@ class ChillGuyImposterEscapeMD3 {
     gameLoop() {
         this.update();
         this.draw();
-        if (this.isMusicEnabled && this.backgroundMusic.paused) {
-            this.backgroundMusic.play();
+        if (this.isMusicEnabled && this.isAudioInitialized && this.backgroundMusic.paused) {
+            this.backgroundMusic.play().catch(error => {
+                console.warn('Failed to play background music in game loop:', error);
+            });
         }
         requestAnimationFrame(this.gameLoop);
     }
