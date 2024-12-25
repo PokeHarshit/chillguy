@@ -169,9 +169,9 @@ body.dark-mode {
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  width: 60vw;
+  width: 55vw;
   gap: 10px;
-  height: 100vh;
+  height: auto;
   padding: 20px 0;
   border-radius: 16px;
   overflow: hidden;
@@ -179,8 +179,8 @@ body.dark-mode {
 
 #game-canvas {
   display: block;
-  width: 80%;
-  height: 60%;
+  width: 100%;
+  height: auto;
 }
 
 #score,
@@ -191,20 +191,9 @@ body.dark-mode {
   background-color: var(--md-sys-color-surface);
   padding: 4px 8px;
   border-radius: 8px;
+  font-size: inherit;
 }
 
-#score {
-  left: 16px;
-}
-
-#lives {
-  right: 16px;
-}
-
-#level {
-  left: 50%;
-  transform: translateX(-50%);
-}
 
 .md3-dialog {
   position: fixed;
@@ -272,7 +261,7 @@ body.dark-mode {
   position: absolute;
   top: 120px;
   display: flex;
-  width: 80%;
+  width: 100%;
   justify-content: space-between;
   padding: 24px;
   border-radius: 28px;
@@ -298,3 +287,39 @@ body.dark-mode {
 .special {
   display: flex;
 }
+
+
+
+
+
+@media screen and (max-width:700px) {
+    /* styles */
+    .settings {
+      display: grid;
+      grid-template-rows: repeat(2, 1fr);
+      grid-template-columns: repeat(3, 1fr);
+      gap: 11px;
+      
+    }
+    #game-container {
+        width: 90vw;
+        height: 90vh;
+        padding: 0px 0;
+        justify-content: space-between;
+    }
+    .md3-headline-large {
+      font-size: 5.5vw;
+      margin-bottom: 80px;
+    }
+    #info {
+      /* flex-direction: column; */
+      gap: 11px;
+      font-size: 2.2vw;
+      top: 50px;
+      /* position: relative; */
+    }
+    #controls {
+        font-size: 3.5vw;
+        margin-top: 80px;
+    }
+  }
