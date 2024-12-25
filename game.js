@@ -23,7 +23,7 @@ class ChillGuyImposterEscapeMD3 {
             width: 40,
             height: 60,
             speed: 5,
-            jumpForce: 15,
+            jumpForce:20,
             velocityY: 0,
             isJumping: false
         };
@@ -230,7 +230,12 @@ class ChillGuyImposterEscapeMD3 {
         if (this.keys['ArrowLeft']) this.player.x -= this.player.speed;
         if (this.keys['ArrowRight']) this.player.x += this.player.speed;
 
-        if (this.keys['ArrowUp'] || this.keys['Space'] && !this.player.isJumping) {
+        document.querySelector('#game-container').addEventListener('click', ()=> {
+            this.player.velocityY = -this.player.jumpForce;
+            this.player.isJumping = true;
+        });
+
+        if ((this.keys['ArrowUp'] || this.keys['Space'] || this.mouseClicked ) && !this.player.isJumping) {
             this.player.velocityY = -this.player.jumpForce;
             this.player.isJumping = true;
         }
@@ -354,6 +359,7 @@ class ChillGuyImposterEscapeMD3 {
         this.initLevel();
         this.gameOverElement.classList.add('hidden');
     }
+
 
     resetPlayerPosition() {
         this.player.x = 50;
