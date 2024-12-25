@@ -12,8 +12,8 @@ class ChillGuyImposterEscapeMD3 {
         this.changeImposterButton = document.getElementById('change-imposter');
         this.levelButtons = document.querySelectorAll('#level-select button');
 
-        this.canvasWidth = 800;
-        this.canvasHeight = 400;
+        this.canvasWidth = 700;
+        this.canvasHeight = 370;
         this.canvas.width = this.canvasWidth;
         this.canvas.height = this.canvasHeight;
 
@@ -230,7 +230,7 @@ class ChillGuyImposterEscapeMD3 {
         if (this.keys['ArrowLeft']) this.player.x -= this.player.speed;
         if (this.keys['ArrowRight']) this.player.x += this.player.speed;
 
-        if (this.keys['Space'] && !this.player.isJumping) {
+        if (this.keys['ArrowUp'] || this.keys['Space'] && !this.player.isJumping) {
             this.player.velocityY = -this.player.jumpForce;
             this.player.isJumping = true;
         }
